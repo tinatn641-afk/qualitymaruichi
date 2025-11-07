@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QC Portal — Album & Part</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg">
+  <header class="topbar">
+    <div class="brand"><div class="logo">QC</div><h1>QC Portal</h1></div>
+    <nav class="nav">
+      <a href="index.html">Dashboard</a>
+      <a href="org.html">Struktur</a>
+      <a href="album.html" class="active">Album & Part</a>
+      <a href="tools.html">Alat Ukur</a>
+      <a href="settings.html">Pengaturan</a>
+    </nav>
+    <div class="user-area" id="userArea"></div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2>Album Gambar & Part</h2>
+
+      <div class="filters row" style="gap:8px;align-items:center">
+        <select id="filterCustomer"><option value="">Semua Customer</option></select>
+        <input id="filterPart" placeholder="Cari Part No / Part Name" />
+        <div class="spacer"></div>
+        <button class="btn secondary" id="clearFilter">Reset</button>
+      </div>
+
+      <div id="photoGrid" class="grid"></div>
+
+      <hr/>
+
+      <div id="addPhotoWrap">
+        <h3>Tambah Foto (URL) & Part</h3>
+        <form id="photoForm" class="stack">
+          <input id="photoUrl" placeholder="URL gambar (atau data:image...)" />
+          <input id="photoPartNo" placeholder="Part No" />
+          <input id="photoPartName" placeholder="Part Name" />
+          <select id="photoCustomer"></select>
+          <div class="row">
+            <button class="btn" id="savePhoto">Tambah</button>
+            <button class="btn secondary" id="importSample" type="button">Isi sample</button>
+          </div>
+        </form>
+      </div>
+
+      <hr/>
+      <h3>Part Master</h3>
+      <div id="partsList" class="stack"></div>
+      <div style="margin-top:8px">
+        <button class="btn secondary" id="exportParts">Export CSV</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    (function(){
+      protectPage();
+      renderTopUser();
+
+      function renderCustomers(){
+        const sel = document.getElementById('photoCustomer');
+        const filter = document.getElementById('filterCustomer');
+        sel.innerHTML=''; filter.innerHTML='<option value="">Semua Customer</option>';
+        const D = loadData();
+        D.customers.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); filter.appendChild(o.cloneNode(true));});
+      }
+
+      function renderPhotos(){
+        const grid = document.getElementById('photoGrid'); grid.innerHTML='';
+        const D = loadData();
+        const custFilter = document.getElementById('filterCustomer').value;
+        const partFilter = document.getElementById('filterPart').value.trim().toLowerCase();
+        const photos = D.photos.filter(p=>{
+          if(custFilter && p.customer!==custFilter) return false;
+          if(partFilter && !(p.partNo.toLowerCase().includes(partFilter) || (p.partName||'').toLowerCase().includes(partFilter))) return false;
+          return true;
+        });
+        photos.forEach(p=>{
+          const c=document.createElement('div'); c.className='card';
+          const thumb=document.createElement('div'); thumb.className='thumb'; thumb.style.backgroundImage=`url(${p.url})`;
+          c.appendChild(thumb);
+          const meta=document.createElement('div'); meta.innerHTML=`<strong>${p.partNo}</strong><div class="muted-sm">${p.partName}</div><div class="muted-sm">${p.customer}</div>`;
+          c.appendChild(meta);
+          if(isAdmin()){
+            const del=document.createElement('button'); del.className='btn secondary'; del.textContent='Hapus';
+            del.addEventListener('click', ()=>{ if(confirm('Hapus foto?')){ const D2=loadData(); D2.photos = D2.photos.filter(x=>x.id!==p.id); saveData(D2); renderPhotos(); renderParts(); }});
+            c.appendChild(del);
+          }
+          grid.appendChild(c);
+        });
+      }
+
+      function renderParts(){
+        const out = document.getElementById('partsList'); out.innerHTML='';
+        const D = loadData();
+        D.parts.forEach(p=>{
+          const el=document.createElement('div'); el.className='card row';
+          el.innerHTML = `<div><strong>${p.partNo}</strong><div class="muted-sm">${p.partName}</div><div class="muted-sm">${p.customer||''}</div></div>`;
+          if(isAdmin()){
+            const del=document.createElement('button'); del.className='btn secondary'; del.textContent='Hapus';
+            del.onclick = ()=>{ if(confirm('Hapus part?')){ const D2=loadData(); D2.parts = D2.parts.filter(x=>x.partNo!==p.partNo); saveData(D2); renderParts(); } };
+            el.appendChild(del);
+          }
+          out.appendChild(el);
+        });
+      }
+
+      document.getElementById('photoForm').addEventListener('submit', e=>{
+        e.preventDefault();
+        if(!isAdmin()) return alert('Hanya admin yang dapat menambah foto/part.');
+        const url = document.getElementById('photoUrl').value.trim();
+        const partNo = document.getElementById('photoPartNo').value.trim();
+        const partName = document.getElementById('photoPartName').value.trim();
+        const customer = document.getElementById('photoCustomer').value;
+        if(!url || !partNo || !customer) return alert('Lengkapi URL, Part No, dan Customer.');
+        const D = loadData();
+        const id = Date.now();
+        D.photos.push({id,url,partNo,partName,customer});
+        if(!D.parts.find(x=>x.partNo===partNo)) D.parts.push({partNo,partName,customer});
+        saveData(D);
+        document.getElementById('photoForm').reset();
+        renderPhotos(); renderParts();
+      });
+
+      document.getElementById('filterCustomer').addEventListener('change', renderPhotos);
+      document.getElementById('filterPart').addEventListener('input', renderPhotos);
+      document.getElementById('clearFilter').addEventListener('click', ()=>{ document.getElementById('filterCustomer').value=''; document.getElementById('filterPart').value=''; renderPhotos(); });
+
+      document.getElementById('exportParts').addEventListener('click', ()=>{
+        const D=loadData();
+        const csv = ['PartNo,PartName,Customer', ...D.parts.map(p=>`${p.partNo},"${p.partName || ''}","${p.customer || ''}"`)].join('\n');
+        const blob = new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='parts.csv'; a.click(); URL.revokeObjectURL(url);
+      });
+
+      document.getElementById('importSample').addEventListener('click', ()=>{
+        if(!confirm('Tambah sample foto & part?')) return;
+        const D=loadData();
+        D.photos.push({id:Date.now()+1,url:'https://via.placeholder.com/400x300?text=Part-A',partNo:'PA-001',partName:'Part A',customer:D.customers[0]});
+        D.parts.push({partNo:'PA-001',partName:'Part A',customer:D.customers[0]});
+        saveData(D); renderPhotos(); renderParts();
+      });
+
+      // init
+      renderCustomers(); renderPhotos(); renderParts();
+      if(!isAdmin()) document.getElementById('addPhotoWrap').style.display='none';
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QC Portal — Pengaturan</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg">
+  <header class="topbar">
+    <div class="brand"><div class="logo">QC</div><h1>QC Portal</h1></div>
+    <nav class="nav">
+      <a href="index.html">Dashboard</a>
+      <a href="org.html">Struktur</a>
+      <a href="album.html">Album & Part</a>
+      <a href="tools.html">Alat Ukur</a>
+      <a href="settings.html" class="active">Pengaturan</a>
+    </nav>
+    <div class="user-area" id="userArea"></div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2>Pengaturan</h2>
+      <div>
+        <h3>Kelola Customer</h3>
+        <form id="customerForm" class="stack">
+          <input id="customerName" placeholder="Nama Customer" />
+          <div class="row"><button class="btn" id="addCustomer">Tambah Customer</button></div>
+        </form>
+        <div id="customerChips" class="stack"></div>
+      </div>
+
+      <hr/>
+      <div>
+        <h3>Manajemen Akun (Demo)</h3>
+        <p class="muted-sm">Prototype menyimpan akun di localStorage. Untuk produksi: integrasikan backend & otentikasi nyata.</p>
+        <div id="accountsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    (function(){
+      protectPage();
+      renderTopUser();
+
+      function renderCustomers(){
+        const el = document.getElementById('customerChips'); el.innerHTML='';
+        const D = loadData();
+        D.customers.forEach(c=>{
+          const chip = document.createElement('div'); chip.className='chip';
+          chip.innerHTML = `<span>${c}</span>`;
+          if(isAdmin()){
+            const del = document.createElement('button'); del.className='btn secondary'; del.textContent='Hapus';
+            del.onclick = ()=>{ if(confirm('Hapus customer?')){ const D2=loadData(); D2.customers = D2.customers.filter(x=>x!==c); saveData(D2); renderCustomers(); } };
+            chip.appendChild(del);
+          }
+          el.appendChild(chip);
+        });
+      }
+
+      document.getElementById('customerForm').addEventListener('submit', e=>{
+        e.preventDefault();
+        if(!isAdmin()) return alert('Hanya admin yang dapat menambah customer.');
+        const name = document.getElementById('customerName').value.trim();
+        if(!name) return alert('Masukkan nama customer');
+        const D = loadData();
+        D.customers.push(name); saveData(D); document.getElementById('customerName').value=''; renderCustomers();
+      });
+
+      function renderAccounts(){
+        const out = document.getElementById('accountsList'); out.innerHTML='';
+        const D = loadData();
+        D.users.forEach(u=>{
+          const row = document.createElement('div'); row.className='card row';
+          row.innerHTML = `<div><strong>${u.name}</strong><div class="muted-sm">${u.email} — ${u.role}</div></div>`;
+          if(isAdmin()){
+            const del = document.createElement('button'); del.className='btn secondary'; del.textContent='Hapus';
+            del.onclick = ()=>{ if(confirm('Hapus akun?')){ const D2=loadData(); D2.users = D2.users.filter(x=>x.email!==u.email); saveData(D2); renderAccounts(); } };
+            row.appendChild(del);
+          }
+          out.appendChild(row);
+        });
+      }
+
+      renderCustomers(); renderAccounts();
+      if(!isAdmin()){
+        document.getElementById('customerForm').style.display='none';
+      }
+    })();
+  </script>
+</body>
+</html>

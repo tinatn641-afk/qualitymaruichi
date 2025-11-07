@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QC Portal — Struktur Organisasi</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg">
+  <header class="topbar">
+    <div class="brand"><div class="logo">QC</div><h1>QC Portal</h1></div>
+    <nav class="nav">
+      <a href="index.html">Dashboard</a>
+      <a href="org.html" class="active">Struktur</a>
+      <a href="album.html">Album & Part</a>
+      <a href="tools.html">Alat Ukur</a>
+      <a href="settings.html">Pengaturan</a>
+    </nav>
+    <div class="user-area" id="userArea"></div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2>Struktur Organisasi</h2>
+      <div id="orgList" class="org-list"></div>
+
+      <div id="orgFormWrap" style="margin-top:14px">
+        <h3>Tambah / Edit (Admin)</h3>
+        <form id="orgForm" class="stack">
+          <input id="orgTitle" placeholder="Jabatan (contoh: Senior Chief)" />
+          <input id="orgPerson" placeholder="Nama orang" />
+          <select id="orgRole">
+            <option value="senior">Senior Chief</option>
+            <option value="leader">Leader</option>
+            <option value="staff">Staff</option>
+            <option value="member">Anggota QC</option>
+          </select>
+          <div class="row">
+            <button class="btn" id="saveOrg">Simpan</button>
+            <button class="btn secondary" id="cancelOrg" type="button">Batal</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    (function(){
+      protectPage();
+      renderTopUser();
+
+      function renderOrg(){
+        const out = document.getElementById('orgList'); out.innerHTML='';
+        const D = loadData();
+        D.org.forEach(o=>{
+          const el = document.createElement('div'); el.className='org-item card';
+          el.innerHTML = `<div><strong>${o.title}</strong><div class="muted-sm">${o.person}</div></div>`;
+          const ops = document.createElement('div');
+          if(isAdmin()){
+            const e = document.createElement('button'); e.className='btn secondary'; e.textContent='Edit';
+            e.addEventListener('click',()=>{ document.getElementById('orgTitle').value=o.title; document.getElementById('orgPerson').value=o.person; document.getElementById('orgRole').value=o.role; document.getElementById('saveOrg').dataset.editId = o.id; });
+            const d = document.createElement('button'); d.className='btn secondary'; d.textContent='Hapus';
+            d.addEventListener('click',()=>{ if(confirm('Hapus item?')){ D.org = D.org.filter(x=>x.id!==o.id); saveData(D); renderOrg(); } });
+            ops.appendChild(e); ops.appendChild(d);
+          }
+          el.appendChild(ops); out.appendChild(el);
+        });
+      }
+
+      document.getElementById('orgForm').addEventListener('submit', e=>{
+        e.preventDefault();
+        if(!isAdmin()) return alert('Hanya admin yang dapat mengubah struktur.');
+        const title = document.getElementById('orgTitle').value.trim();
+        const person = document.getElementById('orgPerson').value.trim();
+        const role = document.getElementById('orgRole').value;
+        if(!title) return alert('Masukkan jabatan');
+        const D = loadData();
+        const editId = document.getElementById('saveOrg').dataset.editId;
+        if(editId){
+          const idx = D.org.findIndex(x=>x.id==editId);
+          if(idx>-1){ D.org[idx].title = title; D.org[idx].person = person; D.org[idx].role = role; delete document.getElementById('saveOrg').dataset.editId; }
+        } else {
+          D.org.push({id:Date.now(), title, person, role});
+        }
+        saveData(D); renderOrg(); document.getElementById('orgForm').reset();
+      });
+
+      document.getElementById('cancelOrg').addEventListener('click', ()=>{ document.getElementById('orgForm').reset(); delete document.getElementById('saveOrg').dataset.editId; });
+
+      // init
+      renderOrg();
+      // hide form if not admin
+      if(!isAdmin()) document.getElementById('orgFormWrap').style.display='none';
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QC Portal — Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg">
+  <header class="topbar">
+    <div class="brand"><div class="logo">QC</div><h1>QC Portal</h1></div>
+    <nav class="nav">
+      <a href="index.html" class="active">Dashboard</a>
+      <a href="org.html">Struktur</a>
+      <a href="album.html">Album & Part</a>
+      <a href="tools.html">Alat Ukur</a>
+      <a href="settings.html">Pengaturan</a>
+    </nav>
+    <div class="user-area" id="userArea">
+      <!-- populated by script -->
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2>Dashboard</h2>
+      <div class="grid">
+        <div class="stat card glass">
+          <div class="muted-sm">Total Foto</div>
+          <div id="totalPhotos" class="big">0</div>
+        </div>
+        <div class="stat card glass">
+          <div class="muted-sm">Total Part</div>
+          <div id="totalParts" class="big">0</div>
+        </div>
+        <div class="stat card glass">
+          <div class="muted-sm">Total Alat</div>
+          <div id="totalTools" class="big">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>Quick Actions</h3>
+      <div class="row">
+        <a class="btn" href="album.html">Tambahkan Foto / Part</a>
+        <a class="btn secondary" href="org.html">Kelola Struktur</a>
+        <a class="btn secondary" href="tools.html">Kelola Alat</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    // dashboard init
+    (function(){
+      protectPage();
+      renderTopUser();
+      const D = loadData();
+      document.getElementById('totalPhotos').textContent = D.photos.length;
+      document.getElementById('totalParts').textContent = D.parts.length;
+      document.getElementById('totalTools').textContent = D.tools.length;
+    })();
+  </script>
+</body>
+</html>

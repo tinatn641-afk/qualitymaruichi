@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QC Portal — Alat Ukur</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg">
+  <header class="topbar">
+    <div class="brand"><div class="logo">QC</div><h1>QC Portal</h1></div>
+    <nav class="nav">
+      <a href="index.html">Dashboard</a>
+      <a href="org.html">Struktur</a>
+      <a href="album.html">Album & Part</a>
+      <a href="tools.html" class="active">Alat Ukur</a>
+      <a href="settings.html">Pengaturan</a>
+    </nav>
+    <div class="user-area" id="userArea"></div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2>Daftar Alat Ukur</h2>
+      <div id="toolsList" class="grid"></div>
+
+      <div id="toolFormWrap" style="margin-top:12px">
+        <h3>Tambah Alat</h3>
+        <form id="toolForm" class="stack">
+          <input id="toolName" placeholder="Nama alat (contoh: Caliper)" />
+          <input id="toolModel" placeholder="Model / Tipe" />
+          <input id="toolSN" placeholder="No. Seri (opsional)" />
+          <select id="toolStatus"><option value="ready">Ready</option><option value="kalibrasi">Butuh Kalibrasi</option><option value="rusak">Rusak</option></select>
+          <div class="row">
+            <button class="btn" id="saveTool">Simpan</button>
+            <button class="btn secondary" id="sampleTools" type="button">Sample</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    (function(){
+      protectPage();
+      renderTopUser();
+      function renderTools(){
+        const out = document.getElementById('toolsList'); out.innerHTML='';
+        const D = loadData();
+        D.tools.forEach(t=>{
+          const el = document.createElement('div'); el.className='card tool-item';
+          el.innerHTML = `<div><strong>${t.name}</strong><div class="muted-sm">${t.model}</div><div class="muted-sm">SN: ${t.sn||'-'}</div><div class="muted-sm">Status: ${t.status}</div></div>`;
+          if(isAdmin()){
+            const del = document.createElement('button'); del.className='btn secondary'; del.textContent='Hapus';
+            del.onclick = ()=>{ if(confirm('Hapus alat?')){ const D2=loadData(); D2.tools = D2.tools.filter(x=>x.id!==t.id); saveData(D2); renderTools(); } };
+            el.appendChild(del);
+          }
+          out.appendChild(el);
+        });
+      }
+
+      document.getElementById('toolForm').addEventListener('submit', e=>{
+        e.preventDefault();
+        if(!isAdmin()) return alert('Hanya admin yang dapat menambah alat.');
+        const name = document.getElementById('toolName').value.trim();
+        if(!name) return alert('Masukkan nama alat');
+        const model = document.getElementById('toolModel').value.trim();
+        const sn = document.getElementById('toolSN').value.trim();
+        const status = document.getElementById('toolStatus').value;
+        const D = loadData(); D.tools.push({id:Date.now(),name,model,sn,status}); saveData(D); renderTools(); document.getElementById('toolForm').reset();
+      });
+
+      document.getElementById('sampleTools').addEventListener('click', ()=>{
+        const D = loadData(); D.tools.push({id:Date.now()+1,name:'Caliper',model:'Mitutoyo 500-196',sn:'CPL-001',status:'ready'}); D.tools.push({id:Date.now()+2,name:'Micrometer',model:'Mitutoyo 293-340',sn:'MIC-021',status:'kalibrasi'}); saveData(D); renderTools();
+      });
+
+      renderTools();
+      if(!isAdmin()) document.getElementById('toolFormWrap').style.display='none';
+    })();
+  </script>
+</body>
+</html>

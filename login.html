@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QC Portal — Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg">
+  <main class="center-card">
+    <div class="card glass">
+      <div class="brand"><div class="logo">QC</div><h1>QC Portal</h1></div>
+      <p class="muted">Masuk untuk mengakses sistem Quality Control</p>
+
+      <form id="loginForm" class="stack">
+        <input id="email" placeholder="Email" autocomplete="username" />
+        <input id="password" placeholder="Password" type="password" autocomplete="current-password" />
+        <select id="roleSelect" style="display:none">
+          <option value="admin">Admin</option>
+          <option value="member">Member</option>
+        </select>
+        <div class="row">
+          <button class="btn" type="submit">Login</button>
+          <button class="btn secondary" id="demoBtn" type="button">Login Demo</button>
+        </div>
+      </form>
+
+      <div class="muted-sm" style="margin-top:10px">
+        <strong>Akun demo</strong><br/>
+        Admin: <code>admin@qc</code> / <code>admin123</code><br/>
+        Member: <code>member@qc</code> / <code>member123</code>
+      </div>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    // quick hookup for login page
+    (function(){
+      initDefaults();
+      const form=document.getElementById('loginForm');
+      form.addEventListener('submit', e=>{
+        e.preventDefault();
+        const em=document.getElementById('email').value.trim();
+        const pw=document.getElementById('password').value;
+        const data = loadData();
+        const user = data.users.find(u=>u.email===em && u.pwd===pw);
+        if(user){ setCurrentUser(user); location.href='index.html'; }
+        else alert('Login gagal — periksa email/password (demo).');
+      });
+      document.getElementById('demoBtn').addEventListener('click',()=>{
+        // quick demo selector: ask simple prompt
+        const pick = confirm('Login sebagai ADMIN? (OK = Admin, Cancel = Member)');
+        const data = loadData();
+        const user = pick ? data.users.find(u=>u.role==='admin') : data.users.find(u=>u.role==='member');
+        setCurrentUser(user); location.href='index.html';
+      });
+    })();
+  </script>
+</body>
+</html>
